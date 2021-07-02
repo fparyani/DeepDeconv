@@ -1,0 +1,15 @@
+Package: DeepDeconv
+Title: Deconvolution of Spatial Transcriptomic Data using Deep Learning
+Version: 1.0.0
+Authors@R: 
+    person(given = "Fahad",
+           family = "Paryani",
+           role = c("aut", "cre"),
+           email = "paryanifahad@berkeley.edu")
+Description: The purpose of this package is to deconvolute spatial transcriptomic data and all the functions for its preprocessing. DeepDeconv contains all the preprocess functions needed to achieve this task and uses methods from machine learning and statistics to do so.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
+    license
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
