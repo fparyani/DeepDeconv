@@ -9,23 +9,50 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## Introduction to DeepDeconv
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This tutorial serves as an introduction into the tools and how to use DeepDeconv. Cocnisely, the purpose of this package is to deconvolute spatial transcriptiomic (ST) data using deep learning. We will illustrate how to use the basic functionality by walking through an example.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The very first thing we need to do is install the package using the "install_github" function from the package devtools
+```{r Loading in DeepDeconv, echo=FALSE}
+#install_github("fparyani/DeepDeconv")
+library(DeepDeconv)
 
-```{r cars}
-summary(cars)
+library(magrittr)
+library(scran)
+library(keras)
+library(data.table)
+library(Matrix)
 ```
 
-## Including Plots
+## Workflow Description
 
-You can also embed plots, for example:
+The idea of DeepDeconv is to use a combination of snRNA (or any sequence data) along with pseudo generated data to deconvolute ST data. From the snRNA we identify relevant genes of the cell type we are interested in. Then using the pseudo data, that emulates various portions of our cell type of interestm DeepDeconv trains a neural network to predict the composition of that cell in the sample or ST data. In this example we will walk through deconvoluting oligodendricytes from the mathys dataset.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+##Step one: Normalization and Dimensionality Reduction of snRNA data
+We first perform a sum normalization of the snRNA data and then quantile normalization to better distinguish gene features. The next step involves selecting relevant oligodendricyte genes. An important note for the *important_gene* function 
+
+
+
+```{r normalization, echo=FALSE}
+snRNA_data <- DeepDeconv::mathy_counts
+snRNA_data <- sum_norm(snRNA_data)
+snRNA_data <- quant_norm(snRNA_data)
+
 ```
+
+
+```{r Gene Selection, echo=FALSE}
+factor_group <- DeepDeconv::mathy_metadata$broad.cell.type %>% factor()
+cell_name <- factor_group %>% table() %>% names()
+
+cell_gene <- important_gene(snRNA_data, factor_group, cell_name[6], st_gene = DeepDeconv::st_gene)
+```
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+
+```
 
