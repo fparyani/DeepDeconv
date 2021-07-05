@@ -15,7 +15,7 @@ quant_norm <- function(gene_exp_mat){
   quant_95 <-  apply(gene_exp_mat,1,function(y) {quant <- quantile(y,probs = seq(0,1,0.05))[20] })
   
   #Transposes the given matrix and makes sure it is sparse
-  gene_exp_mat_t <- t(gene_exp_mat)
+  gene_exp_mat_t <- Matrix::t(gene_exp_mat)
   gene_exp_mat_t <- as(gene_exp_mat_t, 'sparseMatrix')
   
   #Quant renormalization procedure#
@@ -33,7 +33,6 @@ quant_norm <- function(gene_exp_mat){
   #Divides the values below the 95th percentile by the 95th percentile
   gene_exp_mat_t@x[gene_exp_true] <- gene_exp_mat_t@x[gene_exp_true] / quant_95[gene_exp_mat_t@i[gene_exp_true] + 1]
   
-  #gene_exp_mat_t <- t(gene_exp_mat_t)
   gene_exp_mat_t <- Matrix::t(gene_exp_mat_t)
   
   return(gene_exp_mat_t)
