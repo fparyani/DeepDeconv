@@ -33,7 +33,8 @@ quant_norm <- function(gene_exp_mat){
   #Divides the values below the 95th percentile by the 95th percentile
   gene_exp_mat_t@x[gene_exp_true] <- gene_exp_mat_t@x[gene_exp_true] / quant_95[gene_exp_mat_t@i[gene_exp_true] + 1]
   
-  gene_exp_mat_t <- t(gene_exp_mat_t)
+  #gene_exp_mat_t <- t(gene_exp_mat_t)
+  gene_exp_mat_t <- Matrix::t(gene_exp_mat_t)
   
   return(gene_exp_mat_t)
   
