@@ -22,7 +22,7 @@
 important_gene <- function(quant_mat, factor_group, cell_type, st_gene = NA, num_gene = 500 ){
   
   pwt <- scran::pairwiseWilcox(quant_mat, groups=factor_group, direction = 'up')
-  result_pwt <- stats::setNames(lapply(pwt$statistics,  function(x) {as.data.table(x, keep.rownames=TRUE) }), apply(pwt$pairs, 1, paste, collapse = '_'))     
+  result_pwt <- stats::setNames(lapply(pwt$statistics,  function(x) {data.table::as.data.table(x, keep.rownames=TRUE) }), apply(pwt$pairs, 1, paste, collapse = '_'))     
   gene_up_exp <- lapply(result_pwt,function(x){ x$p.value %>% order() } )
   important_gene <- lapply(gene_up_exp,function(x){ x[1:num_gene] })
   
