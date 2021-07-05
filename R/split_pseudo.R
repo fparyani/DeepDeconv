@@ -4,7 +4,7 @@
 #' expression matrix and the labels are the portions normalized of the cell type of interest. 
 #' 
 #' @param reduced_mat This takes in a traditional gene expression matrix that should have been normalized and reduced from "important_gene" function
-#' @param  count_metadata This refers to the cell type count found in metadata and should include all cell types. Should have same cell numbers as reduced_mat
+#' @param count_metadata This refers to the cell type count found in metadata and should include all cell types. Should have same cell numbers as reduced_mat
 #' @param coi This is the cell of interest, takes in the name of the cell type you are deconvoluting. Should be name from metadata
 #' @param ratio This is the percentage split of training/test. Default to 70/30 training/testing data. Input range from 0 - 1
 #' @keywords training
@@ -16,7 +16,7 @@ split_pseudo <- function(reduced_mat, count_metadata, coi, ratio = .70){
   df_sim <- count_metadata
   sim_cell_count <- df_sim %>% as.matrix()
   sim_labels <- apply(sim_cell_count,1,function(x) {  x/(x %>% sum)} ) %>% t()
-  cell_num <- which(str_locate(colnames(sim_cell_count), coi) == 1)
+  cell_num <- which(stringr::str_locate(colnames(sim_cell_count), coi) == 1)
   
   #Assigning training and testing data
   sample <- sample( dim(reduced_mat)[2], size = floor(ratio*dim(reduced_mat)[2]), replace = F)
