@@ -13,46 +13,107 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This tutorial serves as an introduction into the tools and how to use DeepDeconv. Cocnisely, the purpose of this package is to deconvolute spatial transcriptiomic (ST) data using deep learning. We will illustrate how to use the basic functionality by walking through an example.
 
-The very first thing we need to do is install the package using the "install_github" function from the package devtools
-```{r Loading in DeepDeconv, echo=FALSE}
+The very first thing we need to do is install the package using the "install_github" function from the package devtools. Make sure to comment out the installation.
+```{r Loading in DeepDeconv, warning=FALSE, message=FALSE}
+
 #install_github("fparyani/DeepDeconv")
 library(DeepDeconv)
 
+#Packages to load in to ensure feasibility
 library(magrittr)
 library(scran)
 library(keras)
 library(data.table)
 library(Matrix)
+library(ggplot2)
+library(stringr)
 ```
 
 ## Workflow Description
 
 The idea of DeepDeconv is to use a combination of snRNA (or any sequence data) along with pseudo generated data to deconvolute ST data. From the snRNA we identify relevant genes of the cell type we are interested in. Then using the pseudo data, that emulates various portions of our cell type of interestm DeepDeconv trains a neural network to predict the composition of that cell in the sample or ST data. In this example we will walk through deconvoluting oligodendricytes from the mathys dataset.
 
-##Step one: Normalization and Dimensionality Reduction of snRNA data
+## Step 1: Normalization and Dimensionality Reduction of snRNA data
+
 We first perform a sum normalization of the snRNA data and then quantile normalization to better distinguish gene features. The next step involves selecting relevant oligodendricyte genes. An important note for the *important_gene* function 
 
-
-
-```{r normalization, echo=FALSE}
-snRNA_data <- DeepDeconv::mathy_counts
-snRNA_data <- sum_norm(snRNA_data)
-snRNA_data <- quant_norm(snRNA_data)
+```{r normalization}
+snRNA_data <- DeepDeconv::mathy_counts %>% sum_norm() %>% quant_norm()
 
 ```
 
 
-```{r Gene Selection, echo=FALSE}
+```{r Gene Selection, warning=FALSE}
 factor_group <- DeepDeconv::mathy_metadata$broad.cell.type %>% factor()
 cell_name <- factor_group %>% table() %>% names()
 
 cell_gene <- important_gene(snRNA_data, factor_group, cell_name[6], st_gene = DeepDeconv::st_gene)
+
 ```
 
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Step 2: Preparing Pseudo Data
+
+Since the pseudo data is already sum normalized we need to only perform a quantile normalization. After normalizing the data we prepare the test and training data using the split_psuedo function.
 
 ```{r}
+quant_sim <- quant_norm(DeepDeconv::mathy_oligo_sim[,cell_gene] %>% t())
+
+count_metadata <- DeepDeconv::sim_metadata_broad_mathy[,3:8]
+broad_names <- count_metadata %>% names()
+nn_data <- split_pseudo(quant_sim, count_metadata, broad_names[6])
+```
+
+
+## Step 3: Training and validating NN
+
+We will now train a neural network (NN) to predict the portions of oligodendricyte from the pseudo spot data and evaluate its accuracy. The inputs of the NN are the respective gene found in *cell_gene* for each sample.
+```{r}
+network <- train_network(nn_data$`training data`, nn_data$`training label`)
+network %>% evaluate(nn_data$`test data`, nn_data$`test label`)
+result <- network %>% predict(nn_data$`test data`)
 
 ```
+
+
+We can quickly visualize if our model is predicting labels relatively accurately by plotting its predicition and labels. We expect a linear relationship between the two.
+```{r Validation, echo=FALSE, results='hide'}
+#Visualizing the prediction would expect a linear
+df_pred_sim <- data.frame('Label' =  nn_data$`test label` , 'Prediction' =  result)                
+ggplot(df_pred_sim, aes(x = Label, y = Prediction)) + geom_point() 
+```
+
+
+
+## Step 4: Preparing ST data 
+
+Once again we will prepare our raw ST data by sum and quant normalization. In addition, since the respective genes are in different order we ensure our ST matrix is in correct form to input for our model.
+
+```{r}
+#Quantile normalize ST_data
+final_gene_s <- match(rownames(quant_sim), DeepDeconv::st_gene)
+quant_st <- DeepDeconv::st_counts[final_gene_s,] %>% sum_norm() %>% quant_norm()
+
+```
+```{r}
+#Extract a brain sample to predict on
+rownames(st_metadata) <- 1:nrow(st_metadata)
+patient_num <- 12
+all_patient <- split(st_metadata,st_metadata$sample_name)
+patient_cell <- extract_index(all_patient)[patient_num] %>% unlist %>% as.numeric()
+```
+
+
+## Step 5: Prediction using the model
+
+```{r}
+spatial_test_seq <- quant_st[,patient_cell] %>% as.matrix() %>% t()
+regres_prob <- network %>% predict(spatial_test_seq)
+df_reg <- data.frame('col' = all_patient[[patient_num]]$imagecol,'row' = all_patient[[patient_num]]$imagerow,'portion' = regres_prob)
+
+ggplot(df_reg,aes(x = col, y = row)) + geom_point(aes(color = portion), size = 6) + labs(title = paste( 'Oligo Portion Prediction'))
+```
+
+
+
 
